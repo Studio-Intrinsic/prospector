@@ -35,7 +35,8 @@ This will:
 1. Ask for your Exa API key and validate it
 2. Ask for your Apollo API key and validate it
 3. Optionally ask for your Attio API key
-4. Save keys securely to `~/.config/prospector/config.json` (chmod 600)
+4. Optionally set environment variables in your shell profile
+5. Save keys securely to `~/.config/prospector/config.json` (chmod 600)
 
 ### Finding Leads
 
@@ -105,6 +106,18 @@ Config is stored at `~/.config/prospector/config.json`:
 ```
 
 The file is automatically set to `chmod 600` (owner read/write only).
+
+### Environment Variables (Recommended)
+
+You can set keys as environment variables instead of (or in addition to) the config file:
+
+```bash
+export PROSPECTOR_EXA_API_KEY="your-exa-key"
+export PROSPECTOR_APOLLO_API_KEY="your-apollo-key"
+export PROSPECTOR_ATTIO_API_KEY="your-attio-key"  # optional
+```
+
+Environment variables take precedence over the config file.
 
 ## API Usage
 

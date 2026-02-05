@@ -18,6 +18,11 @@ Run `/prospector:setup` first to configure your API keys:
 - **Apollo** (required): https://apollo.io - contact enrichment
 - **Attio** (optional): https://attio.com - CRM sync
 
+You can also set keys via environment variables:
+- `PROSPECTOR_EXA_API_KEY`
+- `PROSPECTOR_APOLLO_API_KEY`
+- `PROSPECTOR_ATTIO_API_KEY` (optional)
+
 ## Usage
 
 ### Setup (one-time)
@@ -40,15 +45,19 @@ Asks ICP questions, searches Exa, enriches via Apollo, outputs CSV to Desktop.
 
 When the user invokes `/prospector`, follow this workflow:
 
-### Step 1: Check Config
+### Step 1: Check Config or Env Vars
 
-First, verify the config exists and keys are valid:
+First, verify env vars or config exist:
 
 ```bash
 python3 -c "
 import json
+import os
 from pathlib import Path
 config_path = Path.home() / '.config' / 'prospector' / 'config.json'
+env_exa = bool(os.getenv('PROSPECTOR_EXA_API_KEY'))
+env_apollo = bool(os.getenv('PROSPECTOR_APOLLO_API_KEY'))
+env_attio = bool(os.getenv('PROSPECTOR_ATTIO_API_KEY'))
 if not config_path.exists():
     print('NOT_FOUND')
 else:
@@ -58,10 +67,13 @@ else:
     print(f'exa: {bool(config.get(\"exa_api_key\"))}')
     print(f'apollo: {bool(config.get(\"apollo_api_key\"))}')
     print(f'attio: {bool(config.get(\"attio_api_key\"))}')
+print(f'env_exa: {env_exa}')
+print(f'env_apollo: {env_apollo}')
+print(f'env_attio: {env_attio}')
 "
 ```
 
-If NOT_FOUND, tell user to run `/prospector:setup` first.
+If NOT_FOUND and env vars are not set, tell user to run `/prospector:setup` first.
 
 ### Step 2: Ask ICP Questions
 

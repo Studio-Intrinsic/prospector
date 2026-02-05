@@ -19,6 +19,11 @@ import httpx
 CONFIG_PATH = Path.home() / ".config" / "prospector" / "config.json"
 DESKTOP_PATH = Path.home() / "Desktop"
 
+# Environment variable overrides (preferred for avoiding plaintext config)
+ENV_EXA_KEY = "PROSPECTOR_EXA_API_KEY"
+ENV_APOLLO_KEY = "PROSPECTOR_APOLLO_API_KEY"
+ENV_ATTIO_KEY = "PROSPECTOR_ATTIO_API_KEY"
+
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
@@ -33,24 +38,37 @@ class Config:
 
     @classmethod
     def load(cls) -> "Config":
-        """Load config from disk. Raises if not found or invalid."""
-        if not CONFIG_PATH.exists():
-            raise FileNotFoundError("Run /prospector:setup first")
+        """Load config from env or disk. Raises if not found or invalid."""
+        env_exa = os.getenv(ENV_EXA_KEY)
+        env_apollo = os.getenv(ENV_APOLLO_KEY)
+        env_attio = os.getenv(ENV_ATTIO_KEY)
 
-        # Verify secure permissions (owner-only)
-        mode = CONFIG_PATH.stat().st_mode
-        if mode & 0o077:
-            raise PermissionError(
-                f"Config has insecure permissions. Run: chmod 600 {CONFIG_PATH}"
+        data: Optional[dict] = None
+        if CONFIG_PATH.exists():
+            # Verify secure permissions (owner-only)
+            mode = CONFIG_PATH.stat().st_mode
+            if mode & 0o077:
+                raise PermissionError(
+                    f"Config has insecure permissions. Run: chmod 600 {CONFIG_PATH}"
+                )
+
+            with open(CONFIG_PATH) as f:
+                data = json.load(f)
+
+        exa_api_key = env_exa or (data.get("exa_api_key") if data else None)
+        apollo_api_key = env_apollo or (data.get("apollo_api_key") if data else None)
+        attio_api_key = env_attio or (data.get("attio_api_key") if data else None)
+
+        if not exa_api_key or not apollo_api_key:
+            raise FileNotFoundError(
+                "Run /prospector:setup first or set "
+                f"{ENV_EXA_KEY}/{ENV_APOLLO_KEY} environment variables"
             )
 
-        with open(CONFIG_PATH) as f:
-            data = json.load(f)
-
         return cls(
-            exa_api_key=data["exa_api_key"],
-            apollo_api_key=data["apollo_api_key"],
-            attio_api_key=data.get("attio_api_key"),
+            exa_api_key=exa_api_key,
+            apollo_api_key=apollo_api_key,
+            attio_api_key=attio_api_key,
         )
 
     def save(self) -> None:

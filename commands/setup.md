@@ -13,12 +13,16 @@ Set up Prospector by collecting and validating API keys.
 
 ## Workflow
 
-### Step 1: Check Existing Config
+### Step 1: Check Existing Config or Env Vars
 
 ```bash
 python3 -c "
+import os
 from pathlib import Path
 config_path = Path.home() / '.config' / 'prospector' / 'config.json'
+env_exa = bool(os.getenv('PROSPECTOR_EXA_API_KEY'))
+env_apollo = bool(os.getenv('PROSPECTOR_APOLLO_API_KEY'))
+env_attio = bool(os.getenv('PROSPECTOR_ATTIO_API_KEY'))
 if config_path.exists():
     import json
     with open(config_path) as f:
@@ -29,6 +33,9 @@ if config_path.exists():
     print(f'attio: {\"***\" + config.get(\"attio_api_key\", \"\")[-4:] if config.get(\"attio_api_key\") else \"not set\"}')
 else:
     print('NOT_FOUND')
+print(f'env_exa: {env_exa}')
+print(f'env_apollo: {env_apollo}')
+print(f'env_attio: {env_attio}')
 "
 ```
 
@@ -164,9 +171,71 @@ except Exception as e:
 "
 ```
 
-### Step 5: Save Config
+### Step 5: Set Environment Variables (Optional)
 
-Save the validated keys:
+Ask user:
+```
+header: "Env Vars"
+question: "Add your API keys to a shell profile as environment variables?"
+options:
+  - label: "Yes"
+    description: "Recommended: avoids putting keys in config files"
+  - label: "Skip"
+    description: "Use config file only"
+multiSelect: false
+```
+
+If Yes, ask which profile to update:
+```
+header: "Shell Profile"
+question: "Which shell profile should we update?"
+options:
+  - label: "~/.zprofile"
+    description: "Login shells (recommended for zsh)"
+  - label: "~/.zshrc"
+    description: "Interactive shells only"
+  - label: "~/.bash_profile"
+    description: "Login shells (bash)"
+  - label: "~/.bashrc"
+    description: "Interactive shells only (bash)"
+multiSelect: false
+```
+
+Then append exports:
+```bash
+python3 -c "
+from pathlib import Path
+profile = Path('~/.zprofile').expanduser()
+lines = [
+    '',
+    '# Prospector API keys',
+    'export PROSPECTOR_EXA_API_KEY=\"[EXA_KEY]\"',
+    'export PROSPECTOR_APOLLO_API_KEY=\"[APOLLO_KEY]\"',
+    'export PROSPECTOR_ATTIO_API_KEY=\"[ATTIO_KEY]\"' if '[ATTIO_KEY]' else '',
+]
+content = '\\n'.join([l for l in lines if l != ''])
+profile.parent.mkdir(parents=True, exist_ok=True)
+with open(profile, 'a') as f:
+    f.write(content + '\\n')
+print(f'Updated {profile}')
+"
+```
+
+### Step 6: Save Config (Optional)
+
+Ask user:
+```
+header: "Config"
+question: "Also save keys to ~/.config/prospector/config.json as a fallback?"
+options:
+  - label: "Yes"
+    description: "Convenient fallback if env vars are missing"
+  - label: "No"
+    description: "Only use environment variables"
+multiSelect: false
+```
+
+If Yes, save config:
 
 ```bash
 python3 -c "
@@ -192,7 +261,7 @@ print('Permissions set to owner-only (chmod 600)')
 "
 ```
 
-### Step 6: Confirm Success
+### Step 7: Confirm Success
 
 Tell user:
 > Setup complete! Your API keys are saved securely.
@@ -203,4 +272,5 @@ Tell user:
 
 - Keys are stored in `~/.config/prospector/config.json`
 - File permissions are set to 600 (owner read/write only)
+- Environment variables (if set) take precedence over the config file
 - Attio is optional - you can always import the CSV manually
